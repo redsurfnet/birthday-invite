@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invitación de Cumpleaños</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    /* =====================================================================
+       VARIABLES DE DISEÑO (Paleta sobria: negro carbón, oro antiguo, grises)
+       ===================================================================== */
+    :root {
+      --bg-primary: #0F0F0F;
+      --bg-card: #17171a;
+      --text-primary: #f4f1ea;
+      --text-secondary: #b8b3a8;
+      --accent-gold: #c6a868;
+      --accent-gold-hover: #dfc282;
+      --border-subtle: rgba(198, 168, 104, 0.28);
+      --focus-ring: #ebd197;
+
+      --font-serif: 'Cormorant Garamond', Georgia, serif;
+      --font-sans: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-weight: 300;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-image:
+        radial-gradient(circle at 20% 20%, rgba(198, 168, 104, 0.08) 0%, transparent 45%),
+        radial-gradient(circle at 80% 80%, rgba(198, 168, 104, 0.06) 0%, transparent 45%);
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: 2px;
+    }
+
+    /* Lienzo superior para el efecto confeti */
+    #confetti-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 50;
+    }
+
+    /* =====================================================================
+       TARJETA PRINCIPAL COMPACTA (SIN SCROLL)
+       ===================================================================== */
+    .invitation-wrapper {
+      width: 100%;
+      max-width: 520px;
+      height: 100dvh;
+      max-height: 96dvh;
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 1.15rem 1.4rem;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85);
+      position: relative;
+      z-index: 10;
+    }
+
+    /* Botón flotante de música de fondo */
+    .music-toggle {
+      position: absolute;
+      top: 0.9rem;
+      right: 0.9rem;
+      z-index: 20;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid var(--border-subtle);
+      background-color: rgba(15, 15, 16, 0.85);
+      color: var(--accent-gold);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.25s ease;
+    }
+
+    .music-toggle:hover {
+      background-color: var(--accent-gold);
+      color: var(--bg-primary);
+    }
+
+    .music-toggle.is-playing {
+      box-shadow: 0 0 12px rgba(198, 168, 104, 0.45);
+      border-color: var(--accent-gold);
+    }
+
+    /* =====================================================================
+       1. ENCABEZADO / HERO
+       ===================================================================== */
+    .hero {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+    }
+
+    .eyebrow {
+      font-size: 1.05rem;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--accent-gold);
+      font-weight: 500;
+    }
+
+    .age-badge {
+      font-family: var(--font-serif);
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--accent-gold);
+      border-top: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0.05rem 0.9rem;
+      letter-spacing: 0.12em;
+    }
+
+    .hero-title {
+      font-family: var(--font-serif);
+      font-size: clamp(1.85rem, 5vw, 2.5rem);
+      font-weight: 600;
+      line-height: 1.05;
+	  text-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+    }
+
+    .invitation-message {
+      font-size: 0.78rem;
+      line-height: 1.4;
+      color: var(--text-secondary);
+      max-width: 420px;
+      margin: 0.15rem auto 0;
+    }
+
+    /* =====================================================================
+       2. CARRUSEL VERTICAL (PROPORCIÓN RETRATO 3:4 / 9:16 COMPACTO)
+       ===================================================================== */
+    .carousel-section {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1 1 auto;
+      min-height: 0;
+      margin: 0.45rem 0;
+    }
+
+    .carousel {
+      position: relative;
+      height: 100%;
+      max-height: 255px;
+      aspect-ratio: 3 / 4;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+      background-color: #0b0b0c;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.55);
+    }
+
+    .carousel-viewport {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .carousel-track {
+      display: flex;
+      height: 100%;
+      transition: transform 0.55s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    .carousel-slide {
+      flex: 0 0 100%;
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    .carousel-slide img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+      display: block;
+    }
+
+    .carousel-caption {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 1.3rem 0.5rem 0.45rem;
+      background: linear-gradient(to top, rgba(10, 10, 12, 0.9), transparent);
+      font-size: 0.7rem;
+      text-align: center;
+      color: var(--text-primary);
+    }
+
+    .carousel-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 3;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid rgba(198, 168, 104, 0.6);
+      background: rgba(15, 15, 16, 0.7);
+      color: var(--text-primary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .carousel-btn:hover {
+      background: var(--accent-gold);
+      color: var(--bg-primary);
+    }
+
+    .carousel-btn--prev { left: 6px; }
+    .carousel-btn--next { right: 6px; }
+
+    .carousel-dots {
+      display: flex;
+      justify-content: center;
+      gap: 0.4rem;
+      margin-top: 0.35rem;
+    }
+
+    .carousel-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      border: 1px solid var(--accent-gold);
+      background: transparent;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .carousel-dot[aria-selected="true"] {
+      background: var(--accent-gold);
+      transform: scale(1.2);
+    }
+
+    /* =====================================================================
+       3. CUENTA REGRESIVA COMPACTA
+       ===================================================================== */
+    .countdown-section {
+      text-align: center;
+    }
+
+    .section-label {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--accent-gold);
+      margin-bottom: 0.25rem;
+    }
+
+    .countdown-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.45rem;
+      max-width: 340px;
+      margin: 0 auto;
+    }
+
+    .countdown-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 0.3rem 0.2rem;
+    }
+
+    .countdown-value {
+      font-family: var(--font-serif);
+      font-size: 1.25rem;
+      font-weight: 600;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .countdown-unit {
+      font-size: 0.52rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-secondary);
+      margin-top: 0.15rem;
+    }
+
+    .countdown-finished {
+      display: none;
+      font-family: var(--font-serif);
+      font-size: 1.1rem;
+      color: var(--accent-gold);
+    }
+
+    /* =====================================================================
+       4. DETALLES EN 3 COLUMNAS COMPACTAS
+       ===================================================================== */
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.45rem;
+      margin: 0.45rem 0;
+    }
+
+    .detail-card {
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 0.45rem 0.35rem;
+      text-align: center;
+    }
+
+    .detail-title {
+      font-size: 0.56rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--accent-gold);
+    }
+
+    .detail-main {
+      font-family: var(--font-serif);
+      font-size: 0.92rem;
+      font-weight: 600;
+      line-height: 1.15;
+      margin: 0.1rem 0;
+    }
+
+    .detail-sub {
+      font-size: 0.66rem;
+      color: var(--text-secondary);
+      line-height: 1.2;
+    }
+
+    /* =====================================================================
+       5. BOTONES INFERIORES APILABLES UNO SOBRE OTRO
+       ===================================================================== */
+    .actions-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      width: 100%;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      padding: 0.62rem 1rem;
+      font-family: var(--font-sans);
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-decoration: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .btn-primary {
+      background: var(--accent-gold);
+      color: var(--bg-primary);
+      border: 1px solid var(--accent-gold);
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-gold-hover);
+      border-color: var(--accent-gold-hover);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-primary);
+      border: 1px solid var(--accent-gold);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(198, 168, 104, 0.12);
+      color: var(--accent-gold-hover);
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 0.64rem;
+      color: var(--text-secondary);
+      margin-top: 0.35rem;
+    }
+
+    /* Ajustes para pantallas pequeñas en altura */
+    @media (max-height: 740px) {
+      .invitation-wrapper {
+        padding: 0.75rem 1rem;
+        max-height: 100dvh;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+      }
+      .carousel {
+        max-height: 195px;
+      }
+      .invitation-message {
+        font-size: 0.72rem;
+      }
+      .btn {
+        padding: 0.52rem 0.85rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Canvas para el efecto confeti dorado -->
+  <canvas id="confetti-canvas" aria-hidden="true"></canvas>
+
+  <!-- Audio de fondo (puedes reemplazar la URL en CONFIG_INVITACION) -->
+  <audio id="bg-music" loop preload="auto"></audio>
+
+  <main class="invitation-wrapper" aria-labelledby="celebrant-name">
+
+    <!-- Control de Música de Fondo y Confeti -->
+    <button
+      type="button"
+      class="music-toggle"
+      id="music-toggle"
+      aria-label="Activar o pausar música de fondo"
+      aria-pressed="false"
+      title="Música de fondo"
+    >
+      <!-- Icono sonido apagado por defecto hasta interacción -->
+      <svg id="icon-sound-off" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <line x1="23" y1="9" x2="17" y2="15"></line>
+        <line x1="17" y1="9" x2="23" y2="15"></line>
+      </svg>
+      <svg id="icon-sound-on" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;" aria-hidden="true">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+      </svg>
+    </button>
+
+    <!-- 1. HERO -->
+    <header class="hero">
+      <p class="eyebrow">Invitación Especial</p>
+      <div class="age-badge" id="celebrant-age">40 AÑOS</div>
+      <h1 class="hero-title" id="celebrant-name">Andres Fernández</h1>
+      <p class="invitation-message" id="invitation-text">
+        Acompáñame a brindar por una nueva década rodeado de buena compañía y grandes momentos.
+      </p>
+    </header>
+
+    <!-- 2. CARRUSEL PARA FOTOS VERTICALES -->
+    <section class="carousel-section" aria-label="Galería fotográfica vertical">
+      <div class="carousel" id="photo-carousel" role="region" aria-roledescription="carrusel" aria-label="Fotos del cumpleañero">
+        <div class="carousel-viewport">
+          <div class="carousel-track" id="carousel-track" aria-live="polite"></div>
+          <button type="button" class="carousel-btn carousel-btn--prev" id="carousel-prev" aria-label="Foto anterior">&#10094;</button>
+          <button type="button" class="carousel-btn carousel-btn--next" id="carousel-next" aria-label="Foto siguiente">&#10095;</button>
+        </div>
+      </div>
+      <div class="carousel-dots" id="carousel-dots" role="tablist" aria-label="Seleccionar fotografía"></div>
+    </section>
+
+    <!-- 3. CUENTA REGRESIVA -->
+    <section class="countdown-section" aria-labelledby="countdown-heading">
+      <h2 class="section-label" id="countdown-heading">Faltan</h2>
+      <div class="countdown-grid" id="countdown-grid" role="timer">
+        <div class="countdown-box"><span class="countdown-value" id="cd-days">00</span><div class="countdown-unit">Días</div></div>
+        <div class="countdown-box"><span class="countdown-value" id="cd-hours">00</span><div class="countdown-unit">Horas</div></div>
+        <div class="countdown-box"><span class="countdown-value" id="cd-minutes">00</span><div class="countdown-unit">Min</div></div>
+        <div class="countdown-box"><span class="countdown-value" id="cd-seconds">00</span><div class="countdown-unit">Seg</div></div>
+      </div>
+      <p class="countdown-finished" id="countdown-finished" role="status">¡El gran día ha llegado!</p>
+    </section>
+
+    <!-- 4. DETALLES -->
+    <section class="details-grid" aria-label="Detalles del evento">
+      <article class="detail-card">
+        <h2 class="detail-title">Fecha y Hora</h2>
+        <p class="detail-main" id="event-date-text">20 Nov 2026</p>
+        <p class="detail-sub" id="event-time-text">20:30 hrs</p>
+      </article>
+      <article class="detail-card">
+        <h2 class="detail-title">Lugar</h2>
+        <p class="detail-main" id="event-venue-name">El Mirador</p>
+        <p class="detail-sub" id="event-venue-address">Bosque Real</p>
+      </article>
+      <article class="detail-card">
+        <h2 class="detail-title">Vestimenta</h2>
+        <p class="detail-main" id="event-dresscode">Formal</p>
+        <p class="detail-sub" id="event-dresscode-note">Tonos oscuros</p>
+      </article>
+    </section>
+
+    <!-- 5. BOTONES INFERIORES APILADOS UNO SOBRE OTRO -->
+    <section class="actions-section" aria-label="Confirmación y mapa">
+      <a href="#" id="btn-whatsapp" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+        </svg>
+        <span>Confirmar por WhatsApp</span>
+      </a>
+
+      <a href="#" id="btn-location" class="btn btn-secondary" target="_blank" rel="noopener noreferrer">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+          <circle cx="12" cy="10" r="3"></circle>
+        </svg>
+        <span>Ubicación</span>
+      </a>
+    </section>
+
+    <footer class="footer">
+      <p id="footer-note">Se ruega confirmar asistencia con anticipación.</p>
+    </footer>
+  </main>
+
+  <script>
+    /* =======================================================================
+       1. CONFIGURACIÓN PRINCIPAL (EDITA AQUÍ LOS DATOS DE LA INVITACIÓN)
+       ======================================================================= */
+    const FECHA_EVENTO_ISO = "2026-11-20T15:00:00";
+    const NUMERO_WHATSAPP = "5215500000000";
+    const DIRECCION_EVENTO = "Av. Grau, a 100 Mts del grifo Primax, Picsi";
+
+    // URL de música ambiental MP3 libre de regalías (puedes cambiarla por tu propio archivo .mp3)
+    const URL_MUSICA_FONDO = "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3";
+
+    const CONFIG_INVITACION = {
+      nombreCumpleanero: "Andres Fernández A.",
+      edadCumple: "61 AÑOS",
+      mensajeInvitacion: "Acompáñame a brindar por una nueva década rodeado de buena compañía y grandes momentos.",
+      fechaTexto: "20 Nov 2026",
+      horaTexto: "3:00 PM",
+      nombreLugar: "Picsi ",
+      direccionCorta: "A 100 Mts del G.Primax",
+      codigoVestimenta: "Normal",
+      notaVestimenta: "A elección del invitado",
+      notaPie: "Se ruega confirmar asistencia con anticipación.",
+      mensajeConfirmacionWhatsApp: "¡Hola! Confirmo con mucho gusto mi asistencia al cumpleaños de Andres Fernández A.."
+    };
+
+    /* =======================================================================
+       2. IMÁGENES VERTICALES DEL CARRUSEL (Formato retrato 3:4 / 9:16)
+       Reemplaza las URL por tus fotos verticales reales
+       ======================================================================= */
+    const IMAGENES_CARRUSEL = [
+      {
+        // REEMPLAZAR URL AQUÍ (Foto vertical 1)
+        url: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=600&h=800&q=80",
+        alt: "Retrato vertical elegante en traje formal",
+        leyenda: "Celebrando una nueva etapa"
+      },
+      {
+        // REEMPLAZAR URL AQUÍ (Foto vertical 2)
+        url: "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&w=600&h=800&q=80",
+        alt: "Brindis nocturno en formato vertical",
+        leyenda: "Una noche para brindar"
+      },
+      {
+        // REEMPLAZAR URL AQUÍ (Foto vertical 3)
+        url: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=600&h=800&q=80",
+        alt: "Salón exclusivo preparado para la celebración",
+        leyenda: "Te esperamos"
+      }
+    ];
+
+    /* =======================================================================
+       3. INICIALIZACIÓN DE DATOS Y ENLACES
+       ======================================================================= */
+    (function initData() {
+      document.title = `Cumpleaños ${CONFIG_INVITACION.edadCumple} — ${CONFIG_INVITACION.nombreCumpleanero}`;
+      document.getElementById("celebrant-age").textContent = CONFIG_INVITACION.edadCumple;
+      document.getElementById("celebrant-name").textContent = CONFIG_INVITACION.nombreCumpleanero;
+      document.getElementById("invitation-text").textContent = CONFIG_INVITACION.mensajeInvitacion;
+      document.getElementById("event-date-text").textContent = CONFIG_INVITACION.fechaTexto;
+      document.getElementById("event-time-text").textContent = CONFIG_INVITACION.horaTexto;
+      document.getElementById("event-venue-name").textContent = CONFIG_INVITACION.nombreLugar;
+      document.getElementById("event-venue-address").textContent = CONFIG_INVITACION.direccionCorta;
+      document.getElementById("event-dresscode").textContent = CONFIG_INVITACION.codigoVestimenta;
+      document.getElementById("event-dresscode-note").textContent = CONFIG_INVITACION.notaVestimenta;
+      document.getElementById("footer-note").textContent = CONFIG_INVITACION.notaPie;
+
+      const cleanPhone = String(NUMERO_WHATSAPP).replace(/\D/g, "");
+      document.getElementById("btn-whatsapp").href = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(CONFIG_INVITACION.mensajeConfirmacionWhatsApp)}`;
+      document.getElementById("btn-location").href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(DIRECCION_EVENTO)}`;
+    })();
+
+    /* =======================================================================
+       4. CARRUSEL DE FOTOS VERTICALES
+       ======================================================================= */
+    (function initCarousel() {
+      const carouselEl = document.getElementById("photo-carousel");
+      const trackEl = document.getElementById("carousel-track");
+      const dotsContainer = document.getElementById("carousel-dots");
+      const prevBtn = document.getElementById("carousel-prev");
+      const nextBtn = document.getElementById("carousel-next");
+
+      let currentIndex = 0;
+      let autoplayTimer = null;
+
+      IMAGENES_CARRUSEL.forEach((item, index) => {
+        const slide = document.createElement("div");
+        slide.className = "carousel-slide";
+        slide.setAttribute("role", "group");
+        slide.setAttribute("aria-label", `${index + 1} de ${IMAGENES_CARRUSEL.length}`);
+
+        const img = document.createElement("img");
+        img.src = item.url;
+        img.alt = item.alt || `Foto ${index + 1}`;
+        slide.appendChild(img);
+
+        if (item.leyenda) {
+          const cap = document.createElement("p");
+          cap.className = "carousel-caption";
+          cap.textContent = item.leyenda;
+          slide.appendChild(cap);
+        }
+        trackEl.appendChild(slide);
+
+        const dot = document.createElement("button");
+        dot.type = "button";
+        dot.className = "carousel-dot";
+        dot.setAttribute("role", "tab");
+        dot.setAttribute("aria-label", `Imagen ${index + 1}`);
+        dot.setAttribute("aria-selected", index === 0 ? "true" : "false");
+        dot.addEventListener("click", () => goToSlide(index));
+        dotsContainer.appendChild(dot);
+      });
+
+      const dots = Array.from(dotsContainer.querySelectorAll(".carousel-dot"));
+
+      function updateCarousel() {
+        trackEl.style.transform = `translateX(-${currentIndex * 100}%)`;
+        dots.forEach((dot, i) => dot.setAttribute("aria-selected", i === currentIndex ? "true" : "false"));
+      }
+
+      function goToSlide(idx) {
+        currentIndex = (idx + IMAGENES_CARRUSEL.length) % IMAGENES_CARRUSEL.length;
+        updateCarousel();
+      }
+
+      function startAutoplay() {
+        stopAutoplay();
+        autoplayTimer = setInterval(() => goToSlide(currentIndex + 1), 4000);
+      }
+
+      function stopAutoplay() {
+        if (autoplayTimer) clearInterval(autoplayTimer);
+      }
+
+      prevBtn.addEventListener("click", () => goToSlide(currentIndex - 1));
+      nextBtn.addEventListener("click", () => goToSlide(currentIndex + 1));
+      carouselEl.addEventListener("mouseenter", stopAutoplay);
+      carouselEl.addEventListener("mouseleave", startAutoplay);
+      carouselEl.addEventListener("focusin", stopAutoplay);
+      carouselEl.addEventListener("focusout", (e) => {
+        if (!carouselEl.contains(e.relatedTarget)) startAutoplay();
+      });
+
+      startAutoplay();
+    })();
+
+    /* =======================================================================
+       5. CUENTA REGRESIVA EN TIEMPO REAL
+       ======================================================================= */
+    (function initCountdown() {
+      const target = new Date(FECHA_EVENTO_ISO).getTime();
+      const daysEl = document.getElementById("cd-days");
+      const hoursEl = document.getElementById("cd-hours");
+      const minEl = document.getElementById("cd-minutes");
+      const secEl = document.getElementById("cd-seconds");
+
+      function update() {
+        const diff = target - Date.now();
+        if (diff <= 0) {
+          document.getElementById("countdown-grid").style.display = "none";
+          document.getElementById("countdown-heading").style.display = "none";
+          document.getElementById("countdown-finished").style.display = "block";
+          return;
+        }
+        daysEl.textContent = String(Math.floor(diff / 86400000)).padStart(2, "0");
+        hoursEl.textContent = String(Math.floor((diff % 86400000) / 3600000)).padStart(2, "0");
+        minEl.textContent = String(Math.floor((diff % 3600000) / 60000)).padStart(2, "0");
+        secEl.textContent = String(Math.floor((diff % 60000) / 1000)).padStart(2, "0");
+      }
+      update();
+      setInterval(update, 1000);
+    })();
+
+    /* =======================================================================
+       6. EFECTO CONFETI ELEGANTE (TONOS DORADOS Y CHAMPÁN)
+       ======================================================================= */
+    (function initConfetti() {
+      const canvas = document.getElementById("confetti-canvas");
+      const ctx = canvas.getContext("2d");
+      let width = (canvas.width = window.innerWidth);
+      let height = (canvas.height = window.innerHeight);
+
+      window.addEventListener("resize", () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+      });
+
+      const colors = ["#c6a868", "#ebd197", "#f4f1ea", "#9c7c38", "#d4af37"];
+      const pieces = Array.from({ length: 65 }, () => ({
+        x: Math.random() * width,
+        y: Math.random() * height - height,
+        w: Math.random() * 7 + 4,
+        h: Math.random() * 4 + 3,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        speedY: Math.random() * 1.4 + 0.6,
+        speedX: Math.random() * 0.8 - 0.4,
+        rotation: Math.random() * 360,
+        rotSpeed: Math.random() * 3 - 1.5,
+        opacity: Math.random() * 0.6 + 0.35
+      }));
+
+      function renderConfetti() {
+        ctx.clearRect(0, 0, width, height);
+        for (const p of pieces) {
+          p.y += p.speedY;
+          p.x += p.speedX + Math.sin(p.y * 0.015) * 0.3;
+          p.rotation += p.rotSpeed;
+
+          if (p.y > height + 10) {
+            p.y = -10;
+            p.x = Math.random() * width;
+          }
+
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rotation * Math.PI) / 180);
+          ctx.globalAlpha = p.opacity;
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+          ctx.restore();
+        }
+        requestAnimationFrame(renderConfetti);
+      }
+
+      renderConfetti();
+    })();
+
+    /* =======================================================================
+       7. MÚSICA DE FONDO (CON INICIO AUTOMÁTICO TRAS PRIMER TOQUE/CLIC)
+       ======================================================================= */
+    (function initMusic() {
+      const audioEl = document.getElementById("bg-music");
+      const toggleBtn = document.getElementById("music-toggle");
+      const iconOff = document.getElementById("icon-sound-off");
+      const iconOn = document.getElementById("icon-sound-on");
+
+      audioEl.src = URL_MUSICA_FONDO;
+      audioEl.volume = 0.35;
+
+      function updateUI(isPlaying) {
+        toggleBtn.setAttribute("aria-pressed", String(isPlaying));
+        toggleBtn.classList.toggle("is-playing", isPlaying);
+        iconOn.style.display = isPlaying ? "block" : "none";
+        iconOff.style.display = isPlaying ? "none" : "block";
+      }
+
+      function togglePlay() {
+        if (audioEl.paused) {
+          audioEl.play().then(() => updateUI(true)).catch(() => updateUI(false));
+        } else {
+          audioEl.pause();
+          updateUI(false);
+        }
+      }
+
+      toggleBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        togglePlay();
+      });
+
+      // Intentar reproducción automática o activar suavemente en la primera interacción
+      audioEl.play()
+        .then(() => updateUI(true))
+        .catch(() => {
+          const unlockAudio = () => {
+            if (audioEl.paused) {
+              audioEl.play().then(() => updateUI(true)).catch(() => {});
+            }
+            document.removeEventListener("click", unlockAudio);
+            document.removeEventListener("touchstart", unlockAudio);
+          };
+          document.addEventListener("click", unlockAudio, { once: true });
+          document.addEventListener("touchstart", unlockAudio, { once: true });
+        });
+    })();
+  </script>
+</body>
+</html>
